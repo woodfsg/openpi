@@ -47,9 +47,9 @@ class Args:
     default_prompt: str | None = None
 
     # Port to serve the policy on.
-    port: int = 8000
+    port: int = 8001
     # Record the policy's behavior for debugging.
-    record: bool = False
+    record: bool = True
 
     # Specifies how to load the policy. If not provided, the default policy for the environment will be used.
     policy: Checkpoint | Default = dataclasses.field(default_factory=Default)
@@ -72,6 +72,7 @@ DEFAULT_CHECKPOINT: dict[EnvMode, Checkpoint] = {
     EnvMode.LIBERO: Checkpoint(
         config="pi0_fast_libero",
         dir="s3://openpi-assets/checkpoints/pi0_fast_libero",
+        # dir="s3://openpi-assets/checkpoints/pi0_fast_base",
     ),
 }
 
@@ -118,5 +119,5 @@ def main(args: Args) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, force=True)
+    logging.basicConfig(level=logging.INFO, force=True, filename="example/libero_goal/server_log", filemode="w")
     main(tyro.cli(Args))

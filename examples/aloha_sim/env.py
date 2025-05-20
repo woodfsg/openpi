@@ -49,8 +49,9 @@ class AlohaSimEnvironment(_environment.Environment):
         img = image_tools.convert_to_uint8(image_tools.resize_with_pad(img, 224, 224))
         # Convert axis order from [H, W, C] --> [C, H, W]
         img = np.transpose(img, (2, 0, 1))
-
+        # print("prompt")
         return {
             "state": gym_obs["agent_pos"],
             "images": {"cam_high": img},
+            "prompt": "remove the cube"
         }
