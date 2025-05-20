@@ -13,7 +13,7 @@ import tyro
 
 @dataclasses.dataclass
 class Args:
-    out_dir: pathlib.Path = pathlib.Path("data/aloha_sim/videos")
+    out_dir: pathlib.Path = pathlib.Path("example/aloha_sim/videos")
 
     task: str = "gym_aloha/AlohaTransferCube-v0"
     seed: int = 0
@@ -21,7 +21,7 @@ class Args:
     action_horizon: int = 10
 
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8001
 
     display: bool = False
 

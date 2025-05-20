@@ -16,6 +16,7 @@ import botocore
 import filelock
 import fsspec
 import fsspec.generic
+import requests
 import s3transfer.futures as s3_transfer_futures
 import tqdm_loggable.auto as tqdm
 from types_boto3_s3.service_resource import ObjectSummary
@@ -35,7 +36,6 @@ def get_cache_dir() -> pathlib.Path:
     cache_dir.mkdir(parents=True, exist_ok=True)
     _set_folder_permission(cache_dir)
     return cache_dir
-
 
 def maybe_download(url: str, *, force_download: bool = False, **kwargs) -> pathlib.Path:
     """Download a file or directory from a remote filesystem to the local cache, and return the local path.
@@ -92,7 +92,7 @@ def maybe_download(url: str, *, force_download: bool = False, **kwargs) -> pathl
             # Download the data to a local cache.
             logger.info(f"Downloading {url} to {local_path}")
             scratch_path = local_path.with_suffix(".partial")
-
+            print(url)
             if _is_openpi_url(url):
                 # Download without credentials.
                 _download_boto3(
