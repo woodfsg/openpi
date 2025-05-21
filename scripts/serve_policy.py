@@ -119,5 +119,5 @@ def main(args: Args) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, force=True, filename="example/libero_goal/server_log", filemode="w")
+    logging.basicConfig(level=logging.INFO, force=True, filename="example/libero_10/server_log", filemode="w")
     main(tyro.cli(Args))

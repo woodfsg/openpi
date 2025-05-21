@@ -32,18 +32,20 @@ class Args:
     # LIBERO environment-specific parameters
     #################################################################################################################
     task_suite_name: str = (
-        "libero_goal"  # Task suite. Options: libero_spatial, libero_object, libero_goal, libero_10, libero_90
+        "libero_10"  # Task suite. Options: libero_spatial, libero_object, libero_goal, libero_10, libero_90
     )
     num_steps_wait: int = 10  # Number of steps to wait for objects to stabilize i n sim
-    num_trials_per_task: int = 2  # Number of rollouts per task
+    num_trials_per_task: int = 10  # Number of rollouts per task
 
     #################################################################################################################
     # Utils
     #################################################################################################################
-    video_out_path: str = "example/libero_goal/videos"  # Path to save videos
+    video_out_path: str = "example/libero_10/videos"  # Path to save videos
 
     seed: int = 7  # Random Seed (for reproducibility)
 
+def need_recover(obs_store):
+    return false
 
 def eval_libero(args: Args) -> None:
     # Set random seed
@@ -92,6 +94,7 @@ def eval_libero(args: Args) -> None:
             # Reset environment
             env.reset()
             action_plan = collections.deque()
+            obs_store = collections.deque(maxlen = 10)
 
             # Set initial states
             obs = env.set_init_state(initial_states[episode_idx])
@@ -103,11 +106,19 @@ def eval_libero(args: Args) -> None:
             logging.info(f"Starting episode {task_episodes+1}...")
             while t < max_steps + args.num_steps_wait:
                 try:
+
+                    obs_store.append(obs)
+
                     # IMPORTANT: Do nothing for the first few timesteps because the simulator drops objects
                     # and we need to wait for them to fall
                     if t < args.num_steps_wait:
                         obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
                         t += 1
+                        continue
+                    
+                    # check if need recover or not
+                    if need_recover(obs_store):
+                        action_plan.clear()
                         continue
 
                     # Get preprocessed image
@@ -215,5 +226,5 @@ def _quat2axisangle(quat):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,filename="example/libero_goal/client_log", filemode="w")
+    logging.basicConfig(level=logging.INFO,filename="example/libero_10/client_log", filemode="w")
     tyro.cli(eval_libero)
