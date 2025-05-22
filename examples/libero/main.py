@@ -119,7 +119,6 @@ def eval_libero(args: Args) -> None:
                     # check if need recover or not
                     if need_recover(obs_store):
                         action_plan.clear()
-                        continue
 
                     # Get preprocessed image
                     # IMPORTANT: rotate 180 degrees to match train preprocessing
