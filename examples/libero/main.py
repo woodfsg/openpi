@@ -13,6 +13,7 @@ from openpi_client import image_tools
 from openpi_client import websocket_client_policy as _websocket_client_policy
 import tqdm
 import tyro
+import matplotlib.pyplot as plt
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 LIBERO_ENV_RESOLUTION = 256  # resolution used to render training data
@@ -35,17 +36,18 @@ class Args:
         "libero_10"  # Task suite. Options: libero_spatial, libero_object, libero_goal, libero_10, libero_90
     )
     num_steps_wait: int = 10  # Number of steps to wait for objects to stabilize i n sim
-    num_trials_per_task: int = 10  # Number of rollouts per task
+    num_trials_per_task: int = 20  # Number of rollouts per task
 
     #################################################################################################################
     # Utils
     #################################################################################################################
-    video_out_path: str = "example/libero_10/videos"  # Path to save videos
+    video_out_path: str = "example/libero_test/videos"  # Path to save videos
+    probs_out_path: str = "example/libero_test/probs"  # Path to save probabilities
 
     seed: int = 7  # Random Seed (for reproducibility)
 
 def need_recover(obs_store):
-    return false
+    return False
 
 def eval_libero(args: Args) -> None:
     # Set random seed
@@ -58,6 +60,7 @@ def eval_libero(args: Args) -> None:
     logging.info(f"Task suite: {args.task_suite_name}")
 
     pathlib.Path(args.video_out_path).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(args.probs_out_path).mkdir(parents=True, exist_ok=True)
 
     if args.task_suite_name == "libero_spatial":
         max_steps = 220  # longest training demo has 193 steps
@@ -86,6 +89,9 @@ def eval_libero(args: Args) -> None:
         # Initialize LIBERO environment and task description
         env, task_description = _get_libero_env(task, LIBERO_ENV_RESOLUTION, args.seed)
 
+        if task_description != "put both the alphabet soup and the tomato sauce in the basket" :
+            continue
+
         # Start episodes
         task_episodes, task_successes = 0, 0
         for episode_idx in tqdm.tqdm(range(args.num_trials_per_task)):
@@ -102,6 +108,7 @@ def eval_libero(args: Args) -> None:
             # Setup
             t = 0
             replay_images = []
+            display_probs = []
 
             logging.info(f"Starting episode {task_episodes+1}...")
             while t < max_steps + args.num_steps_wait:
@@ -151,7 +158,13 @@ def eval_libero(args: Args) -> None:
                         }
 
                         # Query model to get action
-                        action_chunk = client.infer(element)["actions"]
+                        result = client.infer(element)
+                        action_chunk = result["actions"] 
+                        probs = result["probs"]
+                        average_prob = np.mean(probs)
+                        display_probs.append(average_prob)
+                        # logging.info(f"Action chunk shape: {action_chunk.shape}")
+                        # logging.info(f"Probs shape: {probs.shape}")
                         assert (
                             len(action_chunk) >= args.replan_steps
                         ), f"We want to replan every {args.replan_steps} steps, but policy only predicts {len(action_chunk)} steps."
@@ -178,10 +191,22 @@ def eval_libero(args: Args) -> None:
             suffix = "success" if done else "failure"
             task_segment = task_description.replace(" ", "_")
             imageio.mimwrite(
-                pathlib.Path(args.video_out_path) / f"rollout_{task_segment}_{suffix}.mp4",
+                pathlib.Path(args.video_out_path) / f"rollout_{task_segment}_{suffix}_{task_episodes}.mp4",
                 [np.asarray(x) for x in replay_images],
                 fps=10,
             )
+
+            # Save probabilities of the actions taken
+            plt.figure(figsize=(10, 6))
+            plt.plot(range(len(display_probs)), display_probs, 'b-', label='Average Probability')
+            plt.xlabel('Time Step')
+            plt.ylabel('Average Probability')
+            plt.title(f'Action Probabilities Over Time - {task_segment}')
+            plt.grid(True)
+            plt.legend()
+            plt.savefig(pathlib.Path(args.probs_out_path) / f"probs_{task_segment}_{suffix}_{task_episodes}.png")
+            plt.close()
+
 
             # Log current results
             logging.info(f"Success: {done}")
@@ -225,5 +250,5 @@ def _quat2axisangle(quat):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,filename="example/libero_10/client_log", filemode="w")
+    logging.basicConfig(level=logging.INFO,filename="example/libero_test/client_log", filemode="w")
     tyro.cli(eval_libero)

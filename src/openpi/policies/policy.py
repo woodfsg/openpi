@@ -16,6 +16,9 @@ from openpi.models import model as _model
 from openpi.shared import array_typing as at
 from openpi.shared import nnx_utils
 
+import openpi.shared.download as download
+import sentencepiece
+
 BasePolicy: TypeAlias = _base_policy.BasePolicy
 
 
@@ -46,14 +49,48 @@ class Policy(BasePolicy):
         inputs = jax.tree.map(lambda x: jnp.asarray(x)[np.newaxis, ...], inputs)
 
         self._rng, sample_rng = jax.random.split(self._rng)
+        tokens_and_probs = self._sample_actions(sample_rng, _model.Observation.from_dict(inputs), **self._sample_kwargs)
+        tokens_and_probs_len = tokens_and_probs.shape[1]
+        actions = tokens_and_probs[ : , : tokens_and_probs_len // 2]
+        probs =  tokens_and_probs[ : , tokens_and_probs_len // 2: ]  
         outputs = {
             "state": inputs["state"],
-            "actions": self._sample_actions(sample_rng, _model.Observation.from_dict(inputs), **self._sample_kwargs),
+            "actions": actions,
         }
 
         # Unbatch and convert to np.ndarray.
         outputs = jax.tree.map(lambda x: np.asarray(x[0, ...]), outputs)
-        return self._output_transform(outputs)
+        probs = np.asarray(probs[0, ...])
+        actions = outputs["actions"]
+
+        path = download.maybe_download("gs://big_vision/paligemma_tokenizer.model", gs={"token": "anon"})
+        with path.open("rb") as f:
+            _paligemma_tokenizer = sentencepiece.SentencePieceProcessor(model_proto=f.read())
+        
+        decoded_tokens = _paligemma_tokenizer.decode(actions.astype(np.int32).tolist())
+    
+        if "Action: " in decoded_tokens:
+            # 提取动作token序列
+            action_text = decoded_tokens.split("Action: ")[1].split("|")[0].strip()
+            action_tokens = np.array(
+                _paligemma_tokenizer.encode(action_text)
+            )
+            
+            # 找到动作token在完整序列中的起始位置
+            full_tokens = actions
+            marker = _paligemma_tokenizer.encode("Action: ")
+            start_idx = np.where(full_tokens == marker[0])[0][0] + len(marker)
+            end_idx = start_idx + len(action_tokens)
+            
+            # 提取对应的概率值
+            action_probs = probs[start_idx:end_idx]
+        else:
+            action_probs = np.array([])
+
+        result = self._output_transform(outputs)
+        result["probs"] = action_probs
+        
+        return result
 
     @property
     def metadata(self) -> dict[str, Any]:

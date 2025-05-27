@@ -263,9 +263,13 @@ class Pi0FAST(_model.BaseModel):
         # prepare decoding -- final logit decodes the first token
         last_logit = prefix_logits[:, -1:]
         output_tokens = jnp.zeros((last_logit.shape[0], max_decoding_steps))
+        token_probs_all = jnp.zeros((last_logit.shape[0], max_decoding_steps))
 
         def step(carry):
-            last_logit, output_tokens, cache, _, step = carry
+            last_logit, output_tokens, cache, _, step, token_probs_all = carry
+            
+            # 计算 softmax 概率
+            probs = jax.nn.softmax(last_logit, axis=-1)
 
             # Sample token from last logit
             if temperature > 0.0:
@@ -273,6 +277,15 @@ class Pi0FAST(_model.BaseModel):
                 token = jax.random.categorical(rng, last_logit, axis=-1)
             else:
                 token = jnp.argmax(last_logit, axis=-1)
+
+            # 提取 token 概率并存储
+            batch_indices = jnp.arange(probs.shape[0])
+            token_indices_for_vocab = token.squeeze(axis=-1)
+            selected_token_probs = probs[batch_indices, 0, token_indices_for_vocab]
+            token_probs = selected_token_probs[:, None]
+            token_probs_all = put_along_last_axis(token_probs_all, jnp.broadcast_to(step, (token.shape[0], 1)), token_probs)
+            
+            # 更新 output_tokens
             output_tokens = put_along_last_axis(output_tokens, jnp.broadcast_to(step, (token.shape[0], 1)), token)
 
             # Check for early stopping --> stop if all batch elements have EOS token
@@ -291,12 +304,18 @@ class Pi0FAST(_model.BaseModel):
                 embedded_prefix=token_embedding, mask=mask, positions=positions, decode=True, kv_cache=cache
             )
 
-            return last_logit, output_tokens, kv_cache, all_eos, step + 1
+            return last_logit, output_tokens, kv_cache, all_eos, step + 1, token_probs_all
 
         def cond(carry):
-            _, _, _, all_eos, step = carry
+            _, _, _, all_eos, step, _ = carry
             return (~all_eos) & (step < max_decoding_steps)
 
         # Use lax.while_loop so we can jit the full decoding loop.
-        _, output_tokens, _, _, _ = jax.lax.while_loop(cond, step, (last_logit, output_tokens, kv_cache, False, 0))
-        return output_tokens
+        _, output_tokens, _, _, _, token_probs_all = jax.lax.while_loop(cond, step, (last_logit, output_tokens, kv_cache, False, 0, token_probs_all))
+
+        # 合并为 Actions 类型
+        tokens_and_probs = jnp.concatenate([output_tokens, token_probs_all], axis=-1)
+        # logging.info(f"output_tokens shape: {output_tokens.shape}")
+        # logging.info(f"token_probs_all shape: {token_probs_all.shape}")
+        # logging.info(f"Tokens and Probs shape: {tokens_and_probs.shape}")
+        return tokens_and_probs
