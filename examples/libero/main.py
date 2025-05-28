@@ -36,7 +36,7 @@ class Args:
         "libero_10"  # Task suite. Options: libero_spatial, libero_object, libero_goal, libero_10, libero_90
     )
     num_steps_wait: int = 10  # Number of steps to wait for objects to stabilize i n sim
-    num_trials_per_task: int = 20  # Number of rollouts per task
+    num_trials_per_task: int = 10  # Number of rollouts per task
 
     #################################################################################################################
     # Utils
@@ -89,8 +89,8 @@ def eval_libero(args: Args) -> None:
         # Initialize LIBERO environment and task description
         env, task_description = _get_libero_env(task, LIBERO_ENV_RESOLUTION, args.seed)
 
-        if task_description != "put both the alphabet soup and the tomato sauce in the basket" :
-            continue
+        # if task_description != "put both the alphabet soup and the tomato sauce in the basket" :
+        #     continue
 
         # Start episodes
         task_episodes, task_successes = 0, 0
