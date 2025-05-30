@@ -46,8 +46,8 @@ class Args:
 
     seed: int = 7  # Random Seed (for reproducibility)
 
-def need_recover(obs_store):
-    return False
+def need_recover(average_prob: float) -> bool:
+    return average_prob < 0.4  # Threshold for action probability to determine if recovery is needed
 
 def eval_libero(args: Args) -> None:
     # Set random seed
@@ -69,7 +69,8 @@ def eval_libero(args: Args) -> None:
     elif args.task_suite_name == "libero_goal":
         max_steps = 300  # longest training demo has 270 steps
     elif args.task_suite_name == "libero_10":
-        max_steps = 520  # longest training demo has 505 steps
+        # max_steps = 520  # longest training demo has 505 steps
+        max_steps = 1000
     elif args.task_suite_name == "libero_90":
         max_steps = 400  # longest training demo has 373 steps
     else:
@@ -122,10 +123,6 @@ def eval_libero(args: Args) -> None:
                         obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
                         t += 1
                         continue
-                    
-                    # check if need recover or not
-                    if need_recover(obs_store):
-                        action_plan.clear()
 
                     # Get preprocessed image
                     # IMPORTANT: rotate 180 degrees to match train preprocessing
@@ -163,8 +160,12 @@ def eval_libero(args: Args) -> None:
                         probs = result["probs"]
                         average_prob = np.mean(probs)
                         display_probs.append(average_prob)
-                        # logging.info(f"Action chunk shape: {action_chunk.shape}")
-                        # logging.info(f"Probs shape: {probs.shape}")
+
+                        # check if need recover or not
+                        if need_recover(average_prob):
+                            t += 1
+                            continue
+
                         assert (
                             len(action_chunk) >= args.replan_steps
                         ), f"We want to replan every {args.replan_steps} steps, but policy only predicts {len(action_chunk)} steps."
