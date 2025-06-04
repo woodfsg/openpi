@@ -90,8 +90,8 @@ def eval_libero(args: Args) -> None:
         # Initialize LIBERO environment and task description
         env, task_description = _get_libero_env(task, LIBERO_ENV_RESOLUTION, args.seed)
 
-        # if task_description != "put both the alphabet soup and the tomato sauce in the basket" :
-        #     continue
+        if task_description != "put both moka pots on the stove" :
+            continue
 
         # Start episodes
         task_episodes, task_successes = 0, 0
@@ -110,6 +110,7 @@ def eval_libero(args: Args) -> None:
             t = 0
             replay_images = []
             display_probs = []
+            action_last = LIBERO_DUMMY_ACTION
 
             logging.info(f"Starting episode {task_episodes+1}...")
             while t < max_steps + args.num_steps_wait:
@@ -164,6 +165,7 @@ def eval_libero(args: Args) -> None:
                         # check if need recover or not
                         if need_recover(average_prob):
                             t += 1
+                            obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
                             continue
 
                         assert (
@@ -172,6 +174,7 @@ def eval_libero(args: Args) -> None:
                         action_plan.extend(action_chunk[: args.replan_steps])
 
                     action = action_plan.popleft()
+                    action_last = action.tolist()
 
                     # Execute action in environment
                     obs, reward, done, info = env.step(action.tolist())
