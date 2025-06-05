@@ -1,0 +1,54 @@
+INFO:root:Task suite: libero_goal
+INFO:root:Waiting for server at ws://0.0.0.0:8001...
+INFO:root:Still waiting for server...
+INFO:root:Still waiting for server...
+INFO:root:Still waiting for server...
+INFO:root:Still waiting for server...
+INFO:root:Still waiting for server...
+INFO:root:Still waiting for server...
+INFO:root:Still waiting for server...
+INFO:root:Still waiting for server...
+INFO:root:
+Task: open the middle drawer of the cabinet
+INFO:root:Starting episode 1...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 1
+INFO:root:# successes: 0 (0.0%)
+INFO:root:
+Task: open the middle drawer of the cabinet
+INFO:root:Starting episode 2...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 2
+INFO:root:# successes: 1 (50.0%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.5
+INFO:root:
+Task: put the bowl on the stove
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 3
+INFO:root:# successes: 2 (66.7%)
+INFO:root:
+Task: put the bowl on the stove
+INFO:root:Starting episode 2...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 4
+INFO:root:# successes: 3 (75.0%)
+INFO:root:Current task success rate: 1.0
+INFO:root:Current total success rate: 0.75
+INFO:root:
+Task: put the wine bottle on top of the cabinet
+INFO:root:Starting episode 1...
+ERROR:root:Caught exception: received 1001 (going away); then sent 1001 (going away)
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 5
+INFO:root:# successes: 3 (60.0%)
+INFO:root:
+Task: put the wine bottle on top of the cabinet
+INFO:root:Starting episode 2...
+ERROR:root:Caught exception: received 1001 (going away); then sent 1001 (going away)
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 6
+INFO:root:# successes: 3 (50.0%)
+INFO:root:Current task success rate: 0.0
+INFO:root:Current total success rate: 0.5
