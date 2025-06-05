@@ -106,7 +106,7 @@ def eval_libero(args: Args) -> None:
             # Reset environment
             env.reset()
             action_plan = collections.deque()
-            obs_store = collections.deque(maxlen = 10)
+            action_history=collections.deque(maxlen=20)
 
             # Set initial states
             obs = env.set_init_state(initial_states[episode_idx])
@@ -115,13 +115,14 @@ def eval_libero(args: Args) -> None:
             t = 0
             replay_images = []
             display_probs = []
+            
             action_last = LIBERO_DUMMY_ACTION
 
             logging.info(f"Starting episode {task_episodes+1}...")
             while t < max_steps + args.num_steps_wait:
                 try:
 
-                    obs_store.append(obs)
+                    # obs_store.append(obs)
 
                     # IMPORTANT: Do nothing for the first few timesteps because the simulator drops objects
                     # and we need to wait for them to fall
@@ -170,10 +171,8 @@ def eval_libero(args: Args) -> None:
                         # check if need recover or not
                         if need_recover(average_prob):
                             t += 1
-                            # obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
-                            # print(f"qpos:{ obs['robot0_gripper_qpos']}")
-                            print(env.get_sim_state())
-                            continue
+                            action_plan.clear()
+                            
 
                         assert (
                             len(action_chunk) >= args.replan_steps
@@ -181,8 +180,8 @@ def eval_libero(args: Args) -> None:
                         action_plan.extend(action_chunk[: args.replan_steps])
 
                     action = action_plan.popleft()
-                    action_last = action.tolist()
-
+                    # action_last = action.tolist()
+                    action_history.append(action.tolist())
                     # Execute action in environment
                     obs, reward, done, info = env.step(action.tolist())
                     if done:

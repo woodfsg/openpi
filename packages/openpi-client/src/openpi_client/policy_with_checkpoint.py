@@ -14,8 +14,8 @@ class State:
     
     def create_state(element,result,info):
         state = State()
-        state.gpos = element["observation/state"][:6]
-        state.qpos = element["observation/state"][6:]
+        # state.gpos = element["observation/state"][:6]
+        # state.qpos = element["observation/state"][6:]
         state.action = result["actions"]
         state.mean_prob = np.mean(result["probs"])
         state.info = info
@@ -37,7 +37,7 @@ class VLAWithRetry():
         state= State.create_state(obs,res,None)
         self.update_state(state)
         
-        if VLAWithRetryBase.need_recover(state.mean_prob):
+        if VLAWithRetry.need_recover(state.mean_prob):
             res['recover_flag']=True
             self.state_window.index(0)
         
