@@ -3,6 +3,7 @@ import dataclasses
 import logging
 import math
 import pathlib
+import enum
 
 import imageio
 from libero.libero import benchmark
@@ -14,10 +15,16 @@ from openpi_client import websocket_client_policy as _websocket_client_policy
 import tqdm
 import tyro
 import matplotlib.pyplot as plt
-
+import traceback
+import cv2
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 LIBERO_ENV_RESOLUTION = 256  # resolution used to render training data
 
+class RecoverState(enum.Enum):
+    NORMAL = "normal"  # 正常执行状态
+    START_RECOVER = "start_recover"  # 开始恢复
+    RECOVERING = "recovering"  # 正在恢复中
+    RECOVER_END = "recover_end"  # 恢复结束
 
 @dataclasses.dataclass
 class Args:
@@ -49,6 +56,33 @@ class Args:
 def need_recover(average_prob: float) -> bool:
     return average_prob < 0.4  # Threshold for action probability to determine if recovery is needed
 
+def process_observation_images(obs, resize_size,state:RecoverState):
+    """处理obs中的图像
+    """
+    # IMPORTANT: rotate 180 degrees to match train preprocessing
+    img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
+    wrist_img = np.ascontiguousarray(obs["robot0_eye_in_hand_image"][::-1, ::-1])
+    
+    img = image_tools.convert_to_uint8(
+        image_tools.resize_with_pad(img, resize_size, resize_size)
+    )
+    wrist_img = image_tools.convert_to_uint8(
+        image_tools.resize_with_pad(wrist_img, resize_size, resize_size)
+    )
+    # 在 img 上添加文字
+    text = state.value  # 要添加的文字
+    font = cv2.FONT_HERSHEY_SIMPLEX  # 字体
+    font_scale = 0.3  # 字体大小
+    color = (255, 255, 255)  # 文字颜色（白色，RGB格式）
+    thickness = 1  # 文字粗细
+    position = (15, 15)  # 文字左上角位置 (x, y)
+
+    # 使用 cv2.putText 添加文字
+    img_with_text = img.copy()  # 复制图像以避免修改原图
+    cv2.putText(img_with_text, text, position, font, font_scale, color, thickness, cv2.LINE_AA)
+    
+    return img_with_text, wrist_img
+
 def eval_libero(args: Args) -> None:
     # Set random seed
     np.random.seed(args.seed)
@@ -70,7 +104,7 @@ def eval_libero(args: Args) -> None:
         max_steps = 300  # longest training demo has 270 steps
     elif args.task_suite_name == "libero_10":
         # max_steps = 520  # longest training demo has 505 steps
-        max_steps = 1000
+        max_steps = 1600
     elif args.task_suite_name == "libero_90":
         max_steps = 400  # longest training demo has 373 steps
     else:
@@ -85,6 +119,8 @@ def eval_libero(args: Args) -> None:
         
     # Start evaluation
     total_episodes, total_successes = 0, 0
+    recovering_state = RecoverState.NORMAL
+    
     for task_id in tqdm.tqdm(range(num_tasks_in_suite)):
         # Get task
         task = task_suite.get_task(task_id)
@@ -106,7 +142,7 @@ def eval_libero(args: Args) -> None:
             # Reset environment
             env.reset()
             action_plan = collections.deque()
-            action_history=collections.deque(maxlen=20)
+            action_history=collections.deque(maxlen=40)
 
             # Set initial states
             obs = env.set_init_state(initial_states[episode_idx])
@@ -132,15 +168,8 @@ def eval_libero(args: Args) -> None:
                         continue
 
                     # Get preprocessed image
-                    # IMPORTANT: rotate 180 degrees to match train preprocessing
-                    img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
-                    wrist_img = np.ascontiguousarray(obs["robot0_eye_in_hand_image"][::-1, ::-1])
-                    img = image_tools.convert_to_uint8(
-                        image_tools.resize_with_pad(img, args.resize_size, args.resize_size)
-                    )
-                    wrist_img = image_tools.convert_to_uint8(
-                        image_tools.resize_with_pad(wrist_img, args.resize_size, args.resize_size)
-                    )
+                    
+                    img, wrist_img = process_observation_images(obs, args.resize_size,recovering_state)
 
                     # Save preprocessed image for replay video
                     replay_images.append(img)
@@ -148,6 +177,10 @@ def eval_libero(args: Args) -> None:
                     if not action_plan:
                         # Finished executing previous action chunk -- compute new chunk
                         # Prepare observations dict
+                        if recovering_state is not RecoverState.NORMAL:
+                            recovering_state = RecoverState.NORMAL
+                            logging.info("recovering end")
+                            
                         element = {
                             "observation/image": img,
                             "observation/wrist_image": wrist_img,
@@ -169,21 +202,35 @@ def eval_libero(args: Args) -> None:
                         display_probs.append(average_prob)
                         
                         # check if need recover or not
-                        if need_recover(average_prob):
-                            t += 1
+                        if need_recover(average_prob)and len(action_history)>10:
+                            # t += 1
                             action_plan.clear()
+                            r_history = []
+                            for item in reversed(action_history):
+                                r_history.append(np.array([-x for x in item]))
                             
+                            action_history.clear()
+                            action_plan.extend(r_history)
+                            recovering_state = RecoverState.START_RECOVER
+                            logging.info("recover start")
+                        else:
+                            assert (
+                                len(action_chunk) >= args.replan_steps
+                            ), f"We want to replan every {args.replan_steps} steps, but policy only predicts {len(action_chunk)} steps."
+                            action_plan.extend(action_chunk[: args.replan_steps])
 
-                        assert (
-                            len(action_chunk) >= args.replan_steps
-                        ), f"We want to replan every {args.replan_steps} steps, but policy only predicts {len(action_chunk)} steps."
-                        action_plan.extend(action_chunk[: args.replan_steps])
-
+                    
                     action = action_plan.popleft()
-                    # action_last = action.tolist()
-                    action_history.append(action.tolist())
+                    if recovering_state == RecoverState.NORMAL:
+                        action_history.append(action.tolist())
+                        
+                    if recovering_state == RecoverState.RECOVERING and len(action_plan) == 0:
+                        recovering_state = RecoverState.RECOVER_END
+                    elif recovering_state==RecoverState.START_RECOVER:
+                        recovering_state = RecoverState.RECOVERING
                     # Execute action in environment
                     obs, reward, done, info = env.step(action.tolist())
+                    print(action.tolist())
                     if done:
                         task_successes += 1
                         total_successes += 1
@@ -192,6 +239,8 @@ def eval_libero(args: Args) -> None:
 
                 except Exception as e:
                     logging.error(f"Caught exception: {e}")
+                    logging.error(traceback.format_exc())
+                    
                     break
 
             task_episodes += 1
