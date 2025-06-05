@@ -1,0 +1,144 @@
+INFO:root:Task suite: libero_goal
+INFO:root:Waiting for server at ws://0.0.0.0:8001...
+INFO:root:
+Task: open the middle drawer of the cabinet
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 1
+INFO:root:# successes: 1 (100.0%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 2
+INFO:root:# successes: 1 (50.0%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.5
+INFO:root:
+Task: put the bowl on the stove
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 3
+INFO:root:# successes: 2 (66.7%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 4
+INFO:root:# successes: 2 (50.0%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.5
+INFO:root:
+Task: put the wine bottle on top of the cabinet
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 5
+INFO:root:# successes: 3 (60.0%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 6
+INFO:root:# successes: 3 (50.0%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.5
+INFO:root:
+Task: open the top drawer and put the bowl inside
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 7
+INFO:root:# successes: 4 (57.1%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 8
+INFO:root:# successes: 4 (50.0%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.5
+INFO:root:
+Task: put the bowl on top of the cabinet
+INFO:root:Starting episode 1...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 9
+INFO:root:# successes: 4 (44.4%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 10
+INFO:root:# successes: 4 (40.0%)
+INFO:root:Current task success rate: 0.0
+INFO:root:Current total success rate: 0.4
+INFO:root:
+Task: push the plate to the front of the stove
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 11
+INFO:root:# successes: 5 (45.5%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 12
+INFO:root:# successes: 5 (41.7%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.4166666666666667
+INFO:root:
+Task: put the cream cheese in the bowl
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 13
+INFO:root:# successes: 6 (46.2%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 14
+INFO:root:# successes: 6 (42.9%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.42857142857142855
+INFO:root:
+Task: turn on the stove
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 15
+INFO:root:# successes: 7 (46.7%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 16
+INFO:root:# successes: 7 (43.8%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.4375
+INFO:root:
+Task: put the bowl on the plate
+INFO:root:Starting episode 1...
+INFO:root:Success: True
+INFO:root:# episodes completed so far: 17
+INFO:root:# successes: 8 (47.1%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 18
+INFO:root:# successes: 8 (44.4%)
+INFO:root:Current task success rate: 0.5
+INFO:root:Current total success rate: 0.4444444444444444
+INFO:root:
+Task: put the wine bottle on the rack
+INFO:root:Starting episode 1...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 19
+INFO:root:# successes: 8 (42.1%)
+INFO:root:
+Task: 
+INFO:root:Starting episode 2...
+INFO:root:Success: False
+INFO:root:# episodes completed so far: 20
+INFO:root:# successes: 8 (40.0%)
+INFO:root:Current task success rate: 0.0
+INFO:root:Current total success rate: 0.4
+INFO:root:Total success rate: 0.4
+INFO:root:Total episodes: 20
