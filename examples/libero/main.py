@@ -37,7 +37,7 @@ class Args:
     )
     num_steps_wait: int = 10  # Number of steps to wait for objects to stabilize i n sim
     num_trials_per_task: int = 10  # Number of rollouts per task
-
+     
     #################################################################################################################
     # Utils
     #################################################################################################################
@@ -77,7 +77,12 @@ def eval_libero(args: Args) -> None:
         raise ValueError(f"Unknown task suite: {args.task_suite_name}")
 
     client = _websocket_client_policy.WebsocketClientPolicy(args.host, args.port)
-
+    
+    # task_id: int = None
+    
+    # if task_id is not None:
+    #     num_tasks_in_suite=1
+        
     # Start evaluation
     total_episodes, total_successes = 0, 0
     for task_id in tqdm.tqdm(range(num_tasks_in_suite)):
@@ -161,11 +166,13 @@ def eval_libero(args: Args) -> None:
                         probs = result["probs"]
                         average_prob = np.mean(probs)
                         display_probs.append(average_prob)
-
+                        
                         # check if need recover or not
                         if need_recover(average_prob):
                             t += 1
-                            obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
+                            # obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
+                            # print(f"qpos:{ obs['robot0_gripper_qpos']}")
+                            print(env.get_sim_state())
                             continue
 
                         assert (
