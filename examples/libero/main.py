@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 LIBERO_ENV_RESOLUTION = 256  # resolution used to render training data
+RECOVER_WINDOWS_LENGTH = 10
 
 
 @dataclasses.dataclass
@@ -101,6 +102,7 @@ def eval_libero(args: Args) -> None:
             # Reset environment
             env.reset()
             action_plan = collections.deque()
+            action_recover  = collections.deque()
             obs_store = collections.deque(maxlen = 10)
 
             # Set initial states
@@ -165,13 +167,21 @@ def eval_libero(args: Args) -> None:
                         # check if need recover or not
                         if need_recover(average_prob):
                             t += 1
-                            obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
+                            while len(action_recover) != 0:
+                                action = action_recover.popleft()
+                                negated_action = -np.array(action)
+                                logging.info(f"Executing negated recovery action: {negated_action.tolist()}")
+                                env.step(negated_action.tolist())
+                            # obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
                             continue
 
                         assert (
                             len(action_chunk) >= args.replan_steps
                         ), f"We want to replan every {args.replan_steps} steps, but policy only predicts {len(action_chunk)} steps."
                         action_plan.extend(action_chunk[: args.replan_steps])
+                        if len(action_recover) == RECOVER_WINDOWS_LENGTH:
+                            action_recover.popleft()
+                        action_recover.extend(action_chunk[args.replan_steps:])
 
                     action = action_plan.popleft()
                     action_last = action.tolist()
