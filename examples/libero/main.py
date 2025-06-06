@@ -168,7 +168,7 @@ def eval_libero(args: Args) -> None:
                         if need_recover(average_prob):
                             t += 1
                             while len(action_recover) != 0:
-                                action = action_recover.popleft()
+                                action = action_recover.pop()
                                 negated_action = -np.array(action)
                                 logging.info(f"Executing negated recovery action: {negated_action.tolist()}")
                                 env.step(negated_action.tolist())
